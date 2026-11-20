@@ -122,6 +122,8 @@
         <div class="stepper"><button type="button" data-step="mn:-15">−</button><input id="lMn" type="number" min="0" value="0" step="15" inputmode="numeric"><button type="button" data-step="mn:15">+</button></div>
       </div>
     </div>
+    <label class="lbl">📌 الصفحات من أي درس؟</label>
+    <select id="lPgLesson"></select>
 
     <label class="lbl">📖 الدروس — كل ضغطة بتزيد ربع (25% ← 50% ← 75% ← ✓ خلص)</label>
     <div class="legend"><span><i style="background:rgba(255,255,255,.05)"></i>ما بلّشت</span><span><i style="background:linear-gradient(0deg,#8b5cf6 50%,transparent 50%)"></i>بنص الدرس</span><span><i style="background:#8b5cf6"></i>خلص ✓</span></div>
@@ -356,16 +358,22 @@
     $("#lSem").innerHTML = ["s1", "s2"].map((x) => { const r = T.semInfo(st, draft.sid, x).released;
       return `<button class="chip ${x === draft.sem ? "on" : ""}" data-sm="${x}" ${r ? "" : "disabled"}>${x === "s1" ? "الفصل الأول" : "الفصل الثاني"}${r ? "" : " (لم ينزل)"}</button>`; }).join("");
     $("#lLessons").innerHTML = lessonTiles(draft.sid, draft.sem, draft.prog, { base: draft.base });
+    const n = draft.prog.length;
+    if (draft.pl == null || draft.pl >= n) { const f = draft.prog.indexOf("4") === -1 ? 0 : [...draft.prog].findIndex((c) => c !== "4"); draft.pl = Math.max(0, f); }
+    const pps = st.pp[draft.sid][draft.sem];
+    $("#lPgLesson").innerHTML = Array.from({ length: n }, (_, i) => { const L = T.lessonLabel(st, draft.sid, draft.sem, i);
+      return `<option value="${i}" ${i === draft.pl ? "selected" : ""}>الدرس ${i + 1} (الوحدة ${L.unit})${pps[i] ? ` · قرأت منه ${pps[i]} صفحة` : ""}</option>`; }).join("");
+    $("#lPgLesson").onchange = (e) => { draft.pl = +e.target.value; };
     $$("#lSubj .chip").forEach((b) => b.addEventListener("click", () => { draft.sid = b.dataset.s; draft.sem = "s1"; resetDraft(); drawLog(); }));
     $$("#lSem .chip").forEach((b) => b.addEventListener("click", () => { draft.sem = b.dataset.sm; resetDraft(); drawLog(); }));
     $$("#lLessons .lesson").forEach((b) => b.addEventListener("click", () => {
       const i = +b.dataset.i, arr = draft.prog.split("");
-      arr[i] = String((+arr[i] + 1) % 5); draft.prog = arr.join(""); drawLog();
+      arr[i] = String((+arr[i] + 1) % 5); draft.prog = arr.join(""); draft.pl = i; drawLog();
       const nb = $(`#lLessons .lesson[data-i="${i}"]`); nb && nb.classList.add("pop");
     }));
     summary();
   }
-  const resetDraft = () => { draft.prog = draft.base = st.p[draft.sid][draft.sem]; };
+  const resetDraft = () => { draft.prog = draft.base = st.p[draft.sid][draft.sem]; draft.pl = null; };
   function diff() {
     let dq = 0; const ls = [];
     for (let i = 0; i < draft.prog.length; i++) { dq += (+draft.prog[i]) - (+draft.base[i]); if (draft.prog[i] === "4" && draft.base[i] !== "4") ls.push(i); }
@@ -410,10 +418,12 @@
     if (!pg && !mn && !dq) { T.toast("حط عدد الصفحات أو اضغط على درس 🙂", "warn"); return; }
     const before = T.stats(st);
     st.p[draft.sid][draft.sem] = draft.prog;
+    const pl = draft.pl || 0;
+    if (pg) st.pp[draft.sid][draft.sem][pl] = (st.pp[draft.sid][draft.sem][pl] || 0) + pg;
     const k = T.dayKey(); st.days[k] = st.days[k] || { pg: 0, mn: 0, dq: 0 };
     st.days[k].pg = (st.days[k].pg || 0) + pg; st.days[k].mn = (st.days[k].mn || 0) + mn;
     st.days[k].dq = Math.max(0, (st.days[k].dq || 0) + dq);
-    st.log.push({ t: Date.now(), s: draft.sid, sem: draft.sem, pg, mn, dq, ls, note });
+    st.log.push({ t: Date.now(), s: draft.sid, sem: draft.sem, pg, pl: pg ? pl : null, mn, dq, ls, note });
     $("#lSubmit").disabled = true;
     T.Store.save(st); render(); closeM("#logModal");
     T.confetti(); if (soundOn()) T.chime();

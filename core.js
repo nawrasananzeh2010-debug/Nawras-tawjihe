@@ -29,7 +29,7 @@
       cur[s.id] = { s1: split(s.s1, s.s1Units), s2: [] };
       p[s.id] = { s1: "0".repeat(s.s1), s2: "" };
     });
-    return { v: 1, ts: 0, cur, p, days: {}, log: [], goal: 10 };
+    return { v: 1, ts: 0, cur, p, pp: {}, days: {}, log: [], goal: 10 };
   }
 
   const sum = (a) => (a || []).reduce((x, y) => x + (+y || 0), 0);
@@ -41,9 +41,11 @@
     st.ts = +st.ts || 0;
     st.cur = st.cur || d.cur;
     st.p = st.p || d.p;
+    st.pp = st.pp && typeof st.pp === "object" ? st.pp : {};
     SUBJECTS.forEach((s) => {
       st.cur[s.id] = st.cur[s.id] || d.cur[s.id];
       st.p[s.id] = st.p[s.id] || d.p[s.id];
+      st.pp[s.id] = st.pp[s.id] || {};
       ["s1", "s2"].forEach((sem) => {
         const units = (st.cur[s.id][sem] || []).map((x) => Math.max(0, parseInt(x) || 0)).filter((x) => x > 0);
         st.cur[s.id][sem] = units;
@@ -51,6 +53,8 @@
         let str = String(st.p[s.id][sem] || "").replace(/[^0-4]/g, "");
         str = (str + "0".repeat(n)).slice(0, n);
         st.p[s.id][sem] = str;
+        const pp = (Array.isArray(st.pp[s.id][sem]) ? st.pp[s.id][sem] : []).map((x) => Math.max(0, parseInt(x) || 0));
+        st.pp[s.id][sem] = pp.concat(Array(n).fill(0)).slice(0, n);
       });
     });
     st.days = st.days && typeof st.days === "object" ? st.days : {};
