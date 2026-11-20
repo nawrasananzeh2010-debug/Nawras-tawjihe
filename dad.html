@@ -38,6 +38,22 @@
     .l.done b::after { content: " ✓"; }
     .semh { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-weight: 800; font-size: .95rem; }
     .semh .p2 { color: var(--muted); font-weight: 700; font-size: .85rem; }
+    .final { text-align: center; padding: 26px 18px 22px; }
+    .basmala { font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 800; color: #fde68a; margin-bottom: 14px; }
+    .ft { font-weight: 800; font-size: 1.1rem; }
+    .ft2 { font-weight: 800; font-size: .95rem; }
+    .two { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .sub-final { padding: 14px 12px 8px; border-radius: 16px; background: rgba(255,255,255,.04); border: 1px solid var(--card-b); }
+    .nl { position: relative; margin: 54px 8px 30px; height: 14px; border-radius: 99px; background: rgba(255,255,255,.08); }
+    .nl.sm { margin: 44px 6px 28px; height: 10px; }
+    .nl .fill { position: absolute; inset-block: 0; right: 0; width: 0; border-radius: inherit; background: linear-gradient(270deg, #8b5cf6, #ec4899, #fbbf24); transition: width 1.8s var(--ease); }
+    .nl .tk { position: absolute; top: 100%; transform: translateX(50%); font-size: .7rem; color: var(--dim); padding-top: 6px; }
+    .nl .tk::before { content: ""; position: absolute; top: -10px; left: 50%; width: 1px; height: 8px; background: rgba(255,255,255,.25); }
+    .nl .pin { position: absolute; bottom: 100%; right: 0; transform: translateX(50%); margin-bottom: 8px; padding: 4px 10px; border-radius: 10px; font-weight: 900; font-size: 1.15rem; background: #fff; color: #1a1240; white-space: nowrap; transition: right 1.8s var(--ease); }
+    .nl.sm .pin { font-size: .95rem; }
+    .nl .pin::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: #fff; }
+    .nl .pin.soon { background: rgba(251,191,36,.18); color: #fcd34d; font-size: .8rem; }
+    .nl .pin.soon::after { border-top-color: rgba(251,191,36,.18); }
     .l.empty { border-style: dashed; background: transparent; min-height: 52px; }
   </style>
 </head>
@@ -50,6 +66,17 @@
   </div>
   <div class="upd" id="upd">جارِ التحميل…</div>
   <div class="grid" id="subjects" style="gap:16px"></div>
+
+  <div class="card final reveal mt2">
+    <div class="basmala">بسم الله الرحمن الرحيم</div>
+    <div class="ft">نسبة إنجاز نورس بالسنة الأولى كاملة <span class="dim">(الفصلين مع بعض)</span></div>
+    <div class="nl" id="nlYear"></div>
+    <div class="note small dim" id="yearNote"></div>
+    <div class="grid two mt">
+      <div class="sub-final"><div class="ft2">📗 نسبة إنجازه بالفصل الثاني لحال</div><div class="nl sm" id="nlS2"></div></div>
+      <div class="sub-final"><div class="ft2">📘 نسبة إنجازه بالفصل الأول لحال</div><div class="nl sm" id="nlS1"></div></div>
+    </div>
+  </div>
 </div>
 
 <script src="config.js"></script>
@@ -77,8 +104,25 @@
     $("#overallSub").textContent = `خلّص ${S.s1.done} درس من ${S.s1.n} · الفصل الأول`;
   }
 
+  function numberLine(el, pct, soon) {
+    const ticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].filter((t) => !el.classList.contains("sm") || t % 20 === 0);
+    el.innerHTML = `<div class="fill"></div>${ticks.map((t) => `<span class="tk" style="right:${t}%">${t}</span>`).join("")}
+      <div class="pin ${soon ? "soon" : ""}">${soon ? "⏳ لم ينزل بعد" : pct.toFixed(1).replace(/\.0$/, "") + "%"}</div>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.querySelector(".fill").style.width = pct + "%";
+      el.querySelector(".pin").style.right = (soon ? 50 : Math.min(94, Math.max(6, pct))) + "%";
+    }));
+  }
+  function renderFinal() {
+    const S = T.stats(st);
+    numberLine($("#nlYear"), S.all.pct);
+    numberLine($("#nlS1"), S.s1.pct);
+    numberLine($("#nlS2"), S.s2.pct, !S.s2.released);
+    $("#yearNote").textContent = S.s2.released ? `${S.all.done} درس مكتمل من ${S.all.n}` : "الفصل الثاني لسا ما نزل، فالنسبة هلأ محسوبة من دروس الفصل الأول";
+  }
+
   function render() {
-    showOverall();
+    showOverall(); renderFinal();
     $("#upd").textContent = st.ts ? "آخر تحديث: " + T.relTime(st.ts) : "لسا نورس ما سجّل إنجاز";
     $("#subjects").innerHTML = T.SUBJECTS.map((s, i) => {
       const a = T.semInfo(st, s.id, "s1"), prog = st.p[s.id].s1, pps = st.pp[s.id].s1;
