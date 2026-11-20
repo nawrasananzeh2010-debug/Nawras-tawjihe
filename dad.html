@@ -36,6 +36,9 @@
     .l span { font-size: .95rem; font-weight: 900; }
     .l span.z { color: var(--dim); font-weight: 600; font-size: .8rem; }
     .l.done b::after { content: " ✓"; }
+    .semh { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-weight: 800; font-size: .95rem; }
+    .semh .p2 { color: var(--muted); font-weight: 700; font-size: .85rem; }
+    .l.empty { border-style: dashed; background: transparent; min-height: 52px; }
   </style>
 </head>
 <body>
@@ -80,14 +83,20 @@
     $("#subjects").innerHTML = T.SUBJECTS.map((s, i) => {
       const a = T.semInfo(st, s.id, "s1"), prog = st.p[s.id].s1, pps = st.pp[s.id].s1;
       const pages = pps.reduce((x, y) => x + y, 0);
-      const cells = [...prog].map((c, k) => `<div class="l ${c === "4" ? "done" : ""}" style="--p:${+c * 25}%">
+      const grid = (prog, pps) => [...prog].map((c, k) => `<div class="l ${c === "4" ? "done" : ""}" style="--p:${+c * 25}%">
           <div class="f"></div><b>الدرس ${k + 1}</b>${pps[k] ? `<span>${pps[k]} ص</span>` : `<span class="z">—</span>`}</div>`).join("");
+      const b2 = T.semInfo(st, s.id, "s2");
+      const sem2 = b2.released
+        ? `<div class="semh"><span>📗 الفصل الثاني</span><span class="p2">${b2.pct.toFixed(0)}% · ${b2.done}/${b2.n} درس</span></div><div class="ls">${grid(st.p[s.id].s2, st.pp[s.id].s2)}</div>`
+        : `<div class="semh"><span>📗 الفصل الثاني</span><span class="badge-soon">⏳ لم ينزل بعد</span></div><div class="ls">${Array.from({ length: 8 }, () => `<div class="l empty"></div>`).join("")}</div>`;
       return `<div class="card sc ${first ? `reveal d${i + 1}` : ""}" style="--c:${s.color}">
         <div class="top2"><div class="logo" style="background:${s.color};animation:none">${s.icon}</div><h3>${s.name}</h3>
           <div class="pct">${a.pct.toFixed(0)}<small>%</small></div></div>
         <div class="bar mt" style="--c:${s.color}"><i style="width:${a.pct}%"></i></div>
         <div class="meta"><span>خلّص <b>${a.done}</b> من <b>${a.n}</b> درس</span><span>📄 مجموع الصفحات: <b>${pages}</b></span></div>
-        <div class="ls">${cells}</div></div>`;
+        <div class="semh"><span>📘 الفصل الأول</span><span class="p2">${a.pct.toFixed(0)}% · ${a.done}/${a.n} درس</span></div>
+        <div class="ls">${grid(prog, pps)}</div>
+        ${sem2}</div>`;
     }).join("");
     document.querySelectorAll(".bar > i").forEach((el) => { const w = el.style.width; el.style.width = "0"; requestAnimationFrame(() => requestAnimationFrame(() => (el.style.width = w))); });
     T.reveal(); first = false;
