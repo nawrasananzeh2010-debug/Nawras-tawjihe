@@ -12,6 +12,15 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .wrap { max-width: 980px; padding-bottom: 40px; }
+    .welcome-card { text-align: center; padding: 26px 20px; margin-bottom: 10px; }
+    .w1 { font-size: clamp(1.7rem, 6vw, 2.4rem); font-weight: 900; line-height: 1.3; }
+    .w2 { min-height: 3.4em; margin-top: 8px; font-size: 1.1rem; color: var(--muted); line-height: 1.7; }
+    .w2::after { content: "|"; margin-inline-start: 2px; animation: blink 1s steps(1) infinite; }
+    .w2.done::after { content: ""; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .w3 { margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: 0; transform: translateY(10px); transition: all .8s var(--ease); }
+    .w3.in { opacity: 1; transform: none; }
+    .w3 b { font-size: clamp(3rem, 12vw, 4.4rem); font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
     .ttl { text-align: center; margin: 6px 0 4px; font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 900; }
     .upd { text-align: center; color: var(--dim); font-size: .85rem; margin-bottom: 18px; }
     .sc .top2 { display: flex; align-items: center; gap: 12px; }
@@ -31,7 +40,11 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="ttl">📚 إنجاز <span class="grad">نورس</span></div>
+  <div class="card welcome-card reveal">
+    <div class="w1">أهلاً يا <span class="grad">أبو نورس</span> 🌹</div>
+    <div class="w2" id="typed"></div>
+    <div class="w3"><span class="muted">نسبة إنجاز نورس الحالية</span><b id="overall">0%</b><span class="dim small" id="overallSub"></span></div>
+  </div>
   <div class="upd" id="upd">جارِ التحميل…</div>
   <div class="grid" id="subjects" style="gap:16px"></div>
 </div>
@@ -46,7 +59,23 @@
   let st = T.loadLocal(), booted = false, first = true;
   T.starfield();
 
+  const MSG = "كيف الحال؟ إن شاء الله تكون بخير 🤍\nهلأ رح أعطيك نسبة إنجاز نورس الحالية 👇";
+  let typedDone = false;
+  (function type(i = 0) {
+    const el = $("#typed");
+    el.innerHTML = T.esc(MSG.slice(0, i)).replace(/\n/g, "<br>");
+    if (i < MSG.length) setTimeout(() => type(i + 1), 38);
+    else { el.classList.add("done"); typedDone = true; $(".w3").classList.add("in"); showOverall(); }
+  })();
+  function showOverall() {
+    if (!typedDone) return;
+    const S = T.stats(st);
+    T.countUp($("#overall"), S.s1.pct, { dec: 0, suffix: "%", dur: 1600 });
+    $("#overallSub").textContent = `خلّص ${S.s1.done} درس من ${S.s1.n} · الفصل الأول`;
+  }
+
   function render() {
+    showOverall();
     $("#upd").textContent = st.ts ? "آخر تحديث: " + T.relTime(st.ts) : "لسا نورس ما سجّل إنجاز";
     $("#subjects").innerHTML = T.SUBJECTS.map((s, i) => {
       const a = T.semInfo(st, s.id, "s1"), prog = st.p[s.id].s1, pps = st.pp[s.id].s1;

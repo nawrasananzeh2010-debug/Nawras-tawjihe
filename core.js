@@ -36,7 +36,7 @@
 
   function normalize(st) {
     const d = defaultState();
-    if (!st || typeof st !== "object") return d;
+    if (!st || typeof st !== "object") st = d;
     st.v = 1;
     st.ts = +st.ts || 0;
     st.cur = st.cur || d.cur;
